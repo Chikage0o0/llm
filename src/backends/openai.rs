@@ -21,6 +21,7 @@ use serde::{Deserialize, Serialize};
 ///
 /// Provides methods for chat and completion requests using OpenAI's models.
 pub struct OpenAI {
+    pub base_url: String,
     pub api_key: String,
     pub model: String,
     pub max_tokens: Option<u32>,
@@ -194,6 +195,7 @@ impl OpenAI {
     #[allow(clippy::too_many_arguments)]
     pub fn new(
         api_key: impl Into<String>,
+        base_url: Option<String>,
         model: Option<String>,
         max_tokens: Option<u32>,
         temperature: Option<f32>,
@@ -212,6 +214,7 @@ impl OpenAI {
             builder = builder.timeout(std::time::Duration::from_secs(sec));
         }
         Self {
+            base_url: base_url.unwrap_or_else(|| "https://api.openai.com/v1".to_string()),
             api_key: api_key.into(),
             model: model.unwrap_or("gpt-3.5-turbo".to_string()),
             max_tokens,
@@ -320,7 +323,7 @@ impl ChatProvider for OpenAI {
 
         let mut request = self
             .client
-            .post("https://api.openai.com/v1/chat/completions")
+            .post(format!("{}/chat/completions", self.base_url))
             .bearer_auth(&self.api_key)
             .json(&body);
 
@@ -373,7 +376,7 @@ impl EmbeddingProvider for OpenAI {
 
         let resp = self
             .client
-            .post("https://api.openai.com/v1/embeddings")
+            .post(format!("{}/embeddings", self.base_url))
             .bearer_auth(&self.api_key)
             .json(&body)
             .send()
